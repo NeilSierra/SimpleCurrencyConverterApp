@@ -1,5 +1,8 @@
 package com.example.simplecurrencyconverter
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -85,23 +88,27 @@ class MainActivity : AppCompatActivity() {
 
         btnConvert.setOnClickListener {
             // Button convert on click event handler
-            val amount = etFromAmount.text.toString().toDoubleOrNull()
-            val fromCurrency = spinnerFrom.selectedItem.toString()
-            val toCurrency = spinnerTo.selectedItem.toString()
+            if (isInternetAvailable(this)) {
+                val amount = etFromAmount.text.toString().toDoubleOrNull()
+                val fromCurrency = spinnerFrom.selectedItem.toString()
+                val toCurrency = spinnerTo.selectedItem.toString()
 
-            if (amount == null) {
-                Toast.makeText(this@MainActivity, "Please enter a valid number.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+                if (amount == null) {
+                    Toast.makeText(this@MainActivity, "Please enter a valid number.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
 
-            val fromRate = currentRates?.get(fromCurrency)
-            val toRate = currentRates?.get(toCurrency)
+                val fromRate = currentRates?.get(fromCurrency)
+                val toRate = currentRates?.get(toCurrency)
 
-            if (fromRate != null && toRate != null) {
-                val converted = amount / fromRate * toRate
-                etToAmount.setText("%.2f".format(converted))
+                if (fromRate != null && toRate != null) {
+                    val converted = amount / fromRate * toRate
+                    etToAmount.setText("%.2f".format(converted))
+                } else {
+                    Toast.makeText(this@MainActivity, "Rate not available.", Toast.LENGTH_SHORT).show()
+                }
             } else {
-                Toast.makeText(this@MainActivity, "Rate not available.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "Unable to convert. Check your internet connection.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -126,5 +133,14 @@ class MainActivity : AppCompatActivity() {
             spinnerTo.setSelection(0)
         }
 
+    }
+
+    fun isInternetAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 }
